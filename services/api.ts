@@ -2,7 +2,7 @@
 // Just uncomment the BASE_URL and replace the mock functions with real fetch/axios calls to your backend.
 import axios from "axios";
 
-const BASE_URL = "https://stockify-backend-production-b777.up.railway.app/api";
+const BASE_URL = "https://stockify-backend-production-1110.up.railway.app/api";
 const api = axios.create({ baseURL: BASE_URL });
 
 export type Product = {
@@ -76,4 +76,10 @@ export const generateDescription = async (
     price,
   });
   return res.data.description;
+};
+
+// AI - get inventory insights
+export const getAIInsights = async (products: Product[]): Promise<string> => {
+  const res = await api.post("/ai/insights", { products });
+  return res.data.insights;
 };

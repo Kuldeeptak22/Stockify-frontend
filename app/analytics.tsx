@@ -1,4 +1,4 @@
-import { Product } from "@/services/api";
+import { Product, getAIInsights } from "@/services/api";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -27,6 +27,10 @@ export default function AnalyticsScreen() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [insights, setInsights] = useState<string>("");
+  const [loadingInsights, setLoadingInsights] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
+
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -37,6 +41,18 @@ export default function AnalyticsScreen() {
     const data = await getProducts();
     setProducts(data);
     setLoading(false);
+  };
+
+  const handleGetInsights = async () => {
+    setLoadingInsights(true);
+    setShowInsights(true);
+    try {
+      const result = await getAIInsights(products);
+      setInsights(result);
+    } catch (err) {
+      setInsights("Failed to get insights. Try again!");
+    }
+    setLoadingInsights(false);
   };
 
   // Category wise count
@@ -210,6 +226,88 @@ export default function AnalyticsScreen() {
                 </View>
               </View>
             ))}
+          </View>
+        )}
+
+        {/* AI Insights Button */}
+        <TouchableOpacity
+          onPress={handleGetInsights}
+          disabled={loadingInsights}
+          className="bg-purple-600 py-4 mb-8 rounded-2xl items-center justify-center flex-row gap-2"
+        >
+          {loadingInsights ? (
+            <>
+              <ActivityIndicator color="white" size="small" />
+              <Text className="text-white font-semibold">
+                Analyzing inventory...
+              </Text>
+            </>
+          ) : (
+            <Text className="text-white font-semibold text-base">
+              🤖 Get AI Insights
+            </Text>
+          )}
+        </TouchableOpacity>
+
+        {/* AI Insights Card */}
+        {showInsights && (
+          <View className="bg-white rounded-2xl border border-purple-100 mb-8 overflow-hidden">
+            {/* Card Header */}
+            <View className="bg-purple-600 px-4 py-3 flex-row items-center justify-between">
+              <View className="flex-row items-center gap-2">
+                <Text className="text-white text-base">🤖</Text>
+                <Text className="text-white font-bold text-sm">
+                  AI Inventory Insights
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowInsights(false)}>
+                <Text className="text-purple-200 text-lg">✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Card Content */}
+            <View className="p-4">
+              {loadingInsights ? (
+                <View className="items-center py-6">
+                  <ActivityIndicator color="#7c3aed" size="large" />
+                  <Text className="text-purple-400 text-sm mt-3">
+                    AI is analyzing your inventory...
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  {insights
+                    .split("\n")
+                    .filter((line) => line.trim())
+                    .map((line, index) => {
+                      const cleanLine = line
+                        .replace(/\*\*(.*?)\*\*/g, "$1")
+                        .trim();
+                      const isBullet = cleanLine.startsWith("•");
+
+                      return (
+                        <View
+                          key={index}
+                          className={`${isBullet ? "flex-row gap-2 mb-3" : "mb-2"}`}
+                        >
+                          {isBullet ? (
+                            <>
+                              <View className="w-2 h-2 rounded-full bg-purple-500 mt-1.5" />
+                              <Text className="text-gray-700 text-sm leading-6 flex-1">
+                                {cleanLine.substring(1).trim()}
+                              </Text>
+                            </>
+                          ) : (
+                            <Text className="text-gray-500 text-sm leading-5 italic">
+                              {cleanLine}
+                            </Text>
+                          )}
+                        </View>
+                      );
+                    })}
+                </>
+              )}
+            </View>
           </View>
         )}
       </ScrollView>
